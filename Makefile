@@ -28,4 +28,4 @@ lib/%.o: src/%.c
 	$(CC) $(CFLAGS) $(INC) -o $@ -c $<
 
 clean:
-	rm -rf *.dSYM lib/* *~ $(addprefix $(MAIN)_, $(TYPES))
+	rm -rf *.dSYM lib/*.a *~ $(addprefix $(MAIN)_, $(TYPES))
