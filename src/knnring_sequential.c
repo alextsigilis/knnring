@@ -143,57 +143,67 @@ double qSelect(double *X, int *idx, int n, int k) {
 }
 
 
+void qSort(double *X, int *idx, int n) {
 
+	if (n <= 1) {
+		return;
+	}
 
+	int r = qPartition(X,idx,n);
+
+	qSort(X, idx, r);
+	qSort(X+r, idx+r, n-r);
+
+}
 
 knnresult kNN(double *X, double *Y, int n, int m, int d, int k) {
 
 	// Allocating memory for the distance matrix (m-by-n)
-	// and distance vector (n-by-1)
-	double *D 			= 	(double*)malloc( (uint64_t)n * (uint64_t)m * sizeof(double)),
-				*dist			=		(double*)malloc(n*sizeof(double));
-
+	double *D 			= 	(double*)malloc( (uint64_t)n * (uint64_t)m * sizeof(double));
+	
 	// Allocating memory for the index array
 	int*idx = malloc(n*sizeof(int)),
-			ldD = n;
+			ldD = n,
+			ldr;
 
 	// Initializing the result variable
 	knnresult *result = malloc(sizeof(knnresult));
-	result->nidx 	= 	malloc(m*k*sizeof(int));
-	result->ndist = 	malloc(m*k*sizeof(double));
 	result->m 		= 	m;
 	result->k			=		k;
+	result->nidx 	= 	malloc(result->m * result->k * sizeof(int));
+	result->ndist = 	malloc(result->m * result->k * sizeof(double));
+			ldr 			=		result->k; 
+	
 
 	// Compute the distances of every corpus point,
 	// to every query point
-
 	compute_distances(D,X,Y,n,m,d);
 
-	cilk_for(uint64_t qp = 0; qp < m; qp++) { 	// For every query point ... «Find the k nearedt neibhors»
 
-		dist = D + ldD * qp;
-		cilk_for(uint64_t cp = 0; cp < n; cp++) idx[cp] = cp;
-		qSelect(dist, idx, n, k);
+	// Find the knn's
+	for(uint64_t qp = 0; qp < m; qp++) { 			// Foreach query point in Y
 
-		for(int i = 0; i < k; i++) {
-			result->nidx[ qp*k + i ] = idx[i];
-			result->ndist[ qp*k + i ] = dist[i];
+		// Set the indexes
+		for(uint64_t i = 0; i < n; i++) idx[i] = i;
+
+		// Find the k-smallest elements in D[qp,:]
+		qSelect(D+ldD*qp, idx, n, k);
+
+		// Set the values in the result
+		for(uint64_t cp = 0; cp < k; cp++) {
+
+			result->nidx[ qp*ldr+cp ] = idx[ cp ];
+			result->ndist[  qp*ldr+cp ] = D[ qp*ldD + cp  ];
 		}
 
+		// Sort the result
+		qSort(
+					result->ndist +qp*ldr, 
+					result->nidx+qp*ldr,
+					k
+				);
+
 	}
-
-	// TEST CODE
-
-	/*knnresult *result = malloc(sizeof(knnresult));
-	result->nidx = malloc(k*1*sizeof(int));
-	result->ndist = malloc(k*1*sizeof(double));
-	result->m = 1;
-	result->k = k;
-
-	int *idx = malloc(n*sizeof(int));
-	cilk_for(int i = 0; i < n; i++) idx[i] = i;
-
-	qSelect(X,idx,n,k);*/
 
 	return *result;
 }
