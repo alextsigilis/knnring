@@ -1,21 +1,26 @@
 CC = mpicc
 
-CFLAGS = -O3 -Wall -g
+CFLAGS = -O3 -Wall -g -fsanitize=address -fcilkplus
 
-INC = -Iinc/
+# The Path to the OpenBLAS library
+OPENBLAS = /usr/local/Cellar/openblas/0.3.7
+
+INC = -Iinc/ -I$(OPENBLAS)/include/
+
+LDFLAGS = -L$(OPENBLAS)/lib/
 
 TYPES = sequential
 
 SRC = knnring
 
-LIBS = -lm -lgsl -lgslcblas
+LIBS = -lm -lopenblas
 
 MAIN = main
 
 all: $(addprefix $(MAIN)_, $(TYPES))
 
 $(MAIN)_%: $(MAIN).c lib/$(SRC)_%.a
-	$(CC) $(CFLAGS) $(INC) -o $@ $^ $(LIBS)
+	$(CC) $(CFLAGS) $(INC) -o $@ $^ $(LDFLAGS) $(LIBS)
 	rm -rf *.dSYM
 
 lib: $(addsuffix .a, $(addprefix lib/$(SRC)_, $(TYPES)))
