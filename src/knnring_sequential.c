@@ -53,9 +53,8 @@ void compute_distances (double *D, double *X, double *Y, int n, int m, int d) {
 	// Setting the leading dimetions for each matrix
  	uint64_t ldx = d, ldy = d, ldD = n;
 	// Declaring the vectors for the squares of X and Y,
-	// x_sq = sum(X.^2,2), y_sq = sum(Y.^2,2)
-	double x_sq[n], y_sq[m];
-
+	double *x_sq = calloc(n,sizeof(double)),
+				 *y_sq = calloc(n,sizeof(double));
 
 	// Initializing to zero
   cilk_for(uint64_t i = 0; i < n*m; i++){
@@ -202,8 +201,6 @@ knnresult kNN(double *X, double *Y, int n, int m, int d, int k) {
 					result->nidx+qp*ldr,
 					k
 				);
-
 	}
-
 	return *result;
 }
