@@ -87,73 +87,108 @@ void compute_distances (double *D, double *X, double *Y, int n, int m, int d) {
 }
 
 
-//! Partitions the elemets of X
-int qPartition(double *X, int *idx, int n) {
+//! Returns the element of which k elements are less than or equal
+/*!
+\param dist 		The array of elements
+\param n				The number of the elements
+\param k				The dimentions of the points
+\return 				The k-th element
+*/
+double quickSelect (double *dist, int *idx, int n, int k) {
+	int start = 0;
+	int end = n;
 
-  int i = -1;
-  int pivot = n-1;
-  for(int j=0; j < n-1; j++){
-    if(X[j] <= X[pivot]){
-      double tmp;
-      tmp = X[++i];
-      X[i] = X[j];
-      X[j] = tmp;
+	while (start != end) {
 
-			tmp = (double) idx[i];
-			idx[i] = idx[j];
-			idx[j] = (int) tmp;
+		//
+		// PARTITION
+		//
+		double pivot = dist[end-1];
 
-    }
-  }
+		int i = start-1;
 
-  double tmp;
-  tmp = X[++i];
-  X[i] = X[pivot];
-  X[pivot] = tmp;
+		for (int j = start; j < end-1; j++) {
+			if ( dist[j] <= pivot ) {
+				i++;
+				double tmp_d = dist[j];
+				dist[j] = dist[i];
+				dist[i] = tmp_d;
 
-	tmp = (double) idx[i];
-	idx[i] = idx[pivot];
-	idx[pivot] = (int) tmp;
+				int tmp_i = idx[j];
+				idx[j] = idx[i];
+				idx[i] = tmp_i;
+			}
+		}
 
-  return i;
+		double tmp_d= dist[i+1];
+		dist[i+1] = dist[end-1];
+		dist[end-1] = tmp_d;
 
+		int tmp_i = idx[i+1];
+		idx[i+1] = idx[end-1];
+		idx[end-1] = tmp_i;
 
-}
+		i++;
 
-//! "Selects" the k-th smallest element in X,
-//! (it also partitions the array in smaller and bigger elements)
-double qSelect(double *X, int *idx, int n, int k) {
-
-  if (n == 1) {
-    return X[0];
-  }
-
-  int r = qPartition(X,idx, n);
-
-  if (r < k) {
-    return qSelect(X+r, idx+r, n-r, k);
-  }
-  else if (r == k) {
-    return X[r];
-  }
-  else {
-    return qSelect(X, idx, r, k);
-  }
-}
-
-
-void qSort(double *X, int *idx, int n) {
-
-	if (n <= 1) {
-		return;
+		//
+		// SELECT
+		//
+		if (i == k) {
+			return dist[i];
+		}
+		else if (i < k){
+			start = i+1;
+		}
+		else {
+			end = i;
+		}
 	}
 
-	int r = qPartition(X,idx,n);
+	return dist[start];
+}
 
-	qSort(X, idx, r);
-	qSort(X+r, idx+r, n-r);
+
+
+void quickSort (double *dist, int *idx, int n) {
+
+	if (n <= 1) 
+		return;
+
+	//
+	// PARTITION
+	//
+	double pivot = dist[n-1];
+
+	int i = -1;
+
+	for (int j = 0; j < n-1; j++) {
+		if ( dist[j] <= pivot ) {
+			i++;
+			double tmp_d = dist[j];
+			dist[j] = dist[i];
+			dist[i] = tmp_d;
+
+			int tmp_i = idx[j];
+			idx[j] = idx[i];
+			idx[i] = tmp_i;
+		}
+	}
+
+	double tmp_d= dist[i+1];
+	dist[i+1] = dist[n-1];
+	dist[n-1] = tmp_d;
+
+	int tmp_i = idx[i+1];
+	idx[i+1] = idx[n-1];
+	idx[n-1] = tmp_i;
+
+	i++;
+
+	quickSort(dist, idx, i);
+	quickSort(dist+i+1, idx+i+1, n-i-1);
 
 }
+
 
 knnresult kNN(double *X, double *Y, int n, int m, int d, int k) {
 
@@ -186,8 +221,9 @@ knnresult kNN(double *X, double *Y, int n, int m, int d, int k) {
 		for(uint64_t i = 0; i < n; i++) idx[i] = i;
 
 		// Find the k-smallest elements in D[qp,:]
-		qSelect(D+ldD*qp, idx, n, k);
+		quickSelect(D+ldD*qp, idx, n, k);
 
+	
 		// Set the values in the result
 		for(uint64_t cp = 0; cp < k; cp++) {
 
@@ -196,11 +232,17 @@ knnresult kNN(double *X, double *Y, int n, int m, int d, int k) {
 		}
 
 		// Sort the result
-		qSort(
+		quickSort(
 					result->ndist +qp*ldr, 
 					result->nidx+qp*ldr,
 					k
 				);
 	}
+
+	free(D);
+	free(idx);
+
+
 	return *result;
 }
+
