@@ -1,4 +1,4 @@
-CC = mpicc
+CC = gcc-7
 
 CFLAGS = -O3 -Wall -g -fsanitize=address 
 
