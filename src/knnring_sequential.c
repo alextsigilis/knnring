@@ -18,8 +18,6 @@
 #include <math.h>
 #include <assert.h>
 #include <cblas.h>
-#include <cilk/cilk.h>
-#include <cilk/cilk_api.h>
 #include "knnring.h"
 
 //! Computes the product -2 * A*B' and assigns it to C
