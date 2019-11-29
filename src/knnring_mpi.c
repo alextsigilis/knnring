@@ -1,17 +1,19 @@
 /*
  * File		: knnring_sequential.c
 
- * Title	: Sequential kNN Ring
+ * Title	: Synchronus kNN Ring
 
- * Short	: A brute force sollution to full k nearest neighbors.
+ * Short	: 
 
  * Long 	: -
 
  * Author : Αλέξανδρος Τσιγγίλης
 
- * Date		: 13 November 2019
+ * Date		: 29 November 2019
 
 */
+
+#include "mpi.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -56,11 +58,8 @@ void compute_distances (double *D, double *X, double *Y, int n, int m, int d) {
 				 *y_sq = calloc(n,sizeof(double));
 
 	// Initializing to zero
-  for(uint64_t i = 0; i < n*m; i++){
+  for(uint64_t i = 0; i < n*m; i++)
 		D[i] = 0;
-		if (i < m) y_sq[i] = 0;
-		if (i < n) x_sq[i] = 0;
-	}
 
 	// x_sq = sum(X.^2,2)
   for(uint64_t i = 0; i < n; i++)
@@ -140,4 +139,26 @@ knnresult kNN(double *X, double *Y, int n, int m, int d, int k) {
 
 
 	return *result;
+}
+
+
+//! Compute distributed all-kNN of points in X
+knnresult distrAllkNN(double *X, int n, int d, int k) {
+
+	knnresult res;
+	res.nidx 	= 	malloc(n*sizeof(int));
+	res.ndist = 	malloc(n*sizeof(double));
+	res.m			= 	n;
+	res.k			= 	k;
+
+	int p, pid;
+	MPI_Status Stat;
+
+	MPI_Comm_size(MPI_COMM_WORLD, &p);
+	MPI_Comm_rand(MPI_COMM_WORLD, &pid);
+
+	printf("There are %d processes and I am %d", p, pid);
+
+	return res;
+
 }
