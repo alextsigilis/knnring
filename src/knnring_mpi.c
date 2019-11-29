@@ -177,6 +177,7 @@ void quickSort (double *dist, int *idx, int n) {
 
 }
 
+
 //! Computes the product -2 * A*B' and assigns it to C
 void product(double *C, double *A, double *B, int n, int m, int d) {
 
