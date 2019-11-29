@@ -53,6 +53,7 @@ knnresult distrAllkNN(double * X, int n, int d, int k);
 
 
 /* %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% MY FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%% */
+#include <math.h>
 #include <float.h>
 
 #define		parent(i)				(int) floor((double)(i)/2)
