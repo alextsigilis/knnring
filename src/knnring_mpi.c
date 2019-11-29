@@ -155,7 +155,7 @@ knnresult distrAllkNN(double *X, int n, int d, int k) {
 	MPI_Status Stat;
 
 	MPI_Comm_size(MPI_COMM_WORLD, &p);
-	MPI_Comm_rand(MPI_COMM_WORLD, &pid);
+	MPI_Comm_rank(MPI_COMM_WORLD, &pid);
 
 	printf("There are %d processes and I am %d", p, pid);
 

@@ -30,7 +30,7 @@ lib/%.a: lib/%.o
 	ar rcs $@ $<
 
 lib/%.o: src/%.c
-	$(CC) $(CFLAGS) $(INC) -o $@ -c $<
+	$(CC) $(CFLAGS) $(INC) -o $@ -c $< $(LIBS)
 
 clean:
 	rm -rf *.dSYM lib/*.a *~ $(addprefix $(MAIN)_, $(TYPES))
