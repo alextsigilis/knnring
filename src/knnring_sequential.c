@@ -21,8 +21,6 @@
 #include <cilk/cilk.h>
 #include <cilk/cilk_api.h>
 #include "knnring.h"
-#include "sortNselect.h"
-#include "heap.h"
 
 //! Computes the product -2 * A*B' and assigns it to C
 void product(double *C, double *A, double *B, int n, int m, int d) {

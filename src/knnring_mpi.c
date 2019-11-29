@@ -20,11 +20,7 @@
 #include <math.h>
 #include <assert.h>
 #include <cblas.h>
-#include <cilk/cilk.h>
-#include <cilk/cilk_api.h>
 #include "knnring.h"
-#include "sortNselect.h"
-#include "heap.h"
 
 //! Computes the product -2 * A*B' and assigns it to C
 void product(double *C, double *A, double *B, int n, int m, int d) {
@@ -145,20 +141,8 @@ knnresult kNN(double *X, double *Y, int n, int m, int d, int k) {
 //! Compute distributed all-kNN of points in X
 knnresult distrAllkNN(double *X, int n, int d, int k) {
 
-	knnresult res;
-	res.nidx 	= 	malloc(n*sizeof(int));
-	res.ndist = 	malloc(n*sizeof(double));
-	res.m			= 	n;
-	res.k			= 	k;
+	knnresult *res = malloc(sizeof(knnresult));;
 
-	int p, pid;
-	MPI_Status Stat;
-
-	MPI_Comm_size(MPI_COMM_WORLD, &p);
-	MPI_Comm_rank(MPI_COMM_WORLD, &pid);
-
-	printf("There are %d processes and I am %d", p, pid);
-
-	return res;
+	return *res;
 
 }

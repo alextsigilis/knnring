@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "knnring.h"
-#include "utils.h"
 
 int main (int argc, char *argv[]) {
 
@@ -35,7 +34,6 @@ int main (int argc, char *argv[]) {
 	fclose(in);
 	
 	// Do the computation
-	res = kNN(X,Y,n,m,d,k);
 
 	// Print the Output
 	out = fopen("data.out", "w");
