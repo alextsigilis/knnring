@@ -27,6 +27,7 @@
 #define		left(i)							2*i+1
 #define		right(i)						2*i+2
 
+
 //! Inserts a key to the Heap (arrays dist and idx)
 /*!
 	\param dist			Array that holds the values			[n-by-1]
