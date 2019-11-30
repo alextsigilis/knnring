@@ -337,7 +337,7 @@ knnresult distrAllkNN(double *X, int n, int d, int k) {
 		MPI_Send(query, n*d, MPI_DOUBLE, (p+1)%P, 1, MPI_COMM_WORLD);
 
 		/* If `odd` process -> Receive */
-		MPI_Recv(query, n*d, MPI_DOUBLE, (p-1)%P, 1, MPI_COMM_WORLD);
+		MPI_Recv(query, n*d, MPI_DOUBLE, (p-1)%P, 1, MPI_COMM_WORLD, Stat);
 	}
 
 	free(corpus);
