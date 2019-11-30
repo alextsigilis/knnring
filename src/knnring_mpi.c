@@ -334,9 +334,11 @@ knnresult distrAllkNN(double *X, int n, int d, int k) {
 								knn.nidx[qp*k+j]
 							);
 		/* If `even` process -> Sent */
+		printf("Sending, pid=%d\n", pid);
 		MPI_Send(query, n*d, MPI_DOUBLE, (p+1)%P, 1, MPI_COMM_WORLD);
 
 		/* If `odd` process -> Receive */
+		printf("Recieving, pid=%d\n", pid);
 		MPI_Recv(query, n*d, MPI_DOUBLE, (p-1)%P, 1, MPI_COMM_WORLD, &Stat);
 	}
 
