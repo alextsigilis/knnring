@@ -344,6 +344,6 @@ knnresult distrAllkNN(double *X, int n, int d, int k) {
 	}
 	
 
-	return *res;
+	return result;
 
 }
