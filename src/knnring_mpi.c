@@ -315,35 +315,7 @@ knnresult distrAllkNN(double *X, int n, int d, int k) {
 		idx[i] = 0;
 	}	
 
-	for(int i = 0; i < P; i++) {
-
-		// Calculate your own points kNN
-		knn = kNN(corpus, query, n, n, d, k); 	
-
-		// Add them to the heap (Only if there are clores will be added)
-		for(int qp = 0; qp < n; qp++)
-			for(int j = 0; j < k; j++)		
-				insert(
-								dist+qp*k, 
-								idx+qp*k,
-								k,
-								knn.ndist[qp*k+j],
-								knn.nidx[qp*k+j]
-							);
-								
-		/* If even process:
-				Send points
-				then Reciev points
-		*/
-		
-		/*	Else:
-				Reciev points
-				then Send points
-		*/
-
-	}
 	
-
 	return result;
 
 }
