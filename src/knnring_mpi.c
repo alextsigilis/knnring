@@ -298,11 +298,20 @@ knnresult kNN(double *X, double *Y, int n, int m, int d, int k) {
 //! Compute distributed all-kNN of points in X
 knnresult distrAllkNN(double *X, int n, int d, int k) {
 
+	int P, pid;
+
+	MPI_Comm_rank(MPI_COMM_WORLD, &pid);
+	MPI_Comm_size(MPI_COMM_WORLD, &P);
+
+	printf("There are %d tasks, and I am %d\n", P, pid);
+
 	knnresult *res = malloc(sizeof(knnresult));;
 	res->nidx = malloc(n*k*sizeof(int));
 	res->ndist = malloc(n*k*sizeof(double));
 	res->m = n;
 	res->k = k;
+
+	
 
 	return *res;
 
