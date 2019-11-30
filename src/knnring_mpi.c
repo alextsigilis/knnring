@@ -331,7 +331,7 @@ knnresult distrAllkNN(double *X, int n, int d, int k) {
 								idx + qp*k,
 								k,
 								knn.ndist[qp*k+j],
-								knn.nidx[qp*k+j],
+								knn.nidx[qp*k+j]
 							);
 		/* If `even` process -> Sent */
 		MPI_Send(query, n*d, MPI_DOUBLE, (p+1)%P, 1, MPI_COMM_WORLD);
