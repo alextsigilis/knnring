@@ -9,7 +9,7 @@ INC = -Iinc/ -I$(OPENBLAS)/include/
 
 LDFLAGS = -L$(OPENBLAS)/lib/
 
-TYPES = sequential mpi
+TYPES = sequential
 
 SRC = knnring
 
