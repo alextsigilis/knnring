@@ -23,9 +23,11 @@
 #include <float.h>
 #include "knnring.h"
 
-#define		parent(i)				(int) floor((double)(i)/2)
-#define		left(i)							2*i+1
-#define		right(i)						2*i+2
+#define		parent(i)			((int) floor((double)(i)/2))
+#define		left(i)				(2*i+1)
+#define		right(i)			(2*i+2)
+#define		even(n)				((n % 2) == 0)
+#define 	odd(n)				(!even(n))			
 
 
 //! Inserts a key to the Heap (arrays dist and idx)
@@ -314,6 +316,29 @@ knnresult distrAllkNN(double *X, int n, int d, int k) {
 		dist[i] = DBL_MAX;
 		idx[i] = 0;
 	}	
+
+	/* DO THE RING COMPUTATION */
+	for(int p = 0; p < P-1; p++) {
+
+		/* Find knn for query and corpus */
+		knn = kNN(corpus, query, n, n, d, k);
+
+		/* Add to the heap */
+		for(int qp = 0; qp < n; qp++)
+			for(int j = 0; j < k; j++)
+				insert(
+								dist + qp*k,
+								idx + qp*k,
+								k,
+								knn.ndist[qp*k+j];
+								knn.nidx[qp*k+j];
+							);
+		/* If `even` process -> Sent */
+		MPI_Send(query, n*d, MPI_DOUBLE, (p+1)%P, 1, MPI_COMM_WORLD);
+
+		/* If `odd` process -> Receive */
+		MPI_Recv(query, n*d, MPI_DOUBLE, (p-1)%P, 1, MPI_COMM_WORLD);
+	}
 
 	free(corpus);
 	free(query);
