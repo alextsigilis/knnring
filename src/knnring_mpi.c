@@ -315,7 +315,14 @@ knnresult distrAllkNN(double *X, int n, int d, int k) {
 		idx[i] = 0;
 	}	
 
-	
+	free(corpus);
+	free(query);
+
+	result.nidx = idx;
+	result.ndist = dist;
+	result.m = n;
+	result.k = k;
+
 	return result;
 
 }
