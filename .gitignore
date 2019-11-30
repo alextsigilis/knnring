@@ -2,3 +2,4 @@
 octave-workspace
 data.*
 main_*
+lib/*.a
