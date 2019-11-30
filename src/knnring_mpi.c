@@ -279,12 +279,6 @@ knnresult kNN(double *X, double *Y, int n, int m, int d, int k) {
 			result->ndist[  qp*ldr+cp ] = D[ qp*ldD + cp  ];
 		}
 
-		// Sort the result
-		quickSort(
-					result->ndist +qp*ldr,
-					result->nidx+qp*ldr,
-					k
-				);
 	}
 
 	free(D);
@@ -298,19 +292,56 @@ knnresult kNN(double *X, double *Y, int n, int m, int d, int k) {
 //! Compute distributed all-kNN of points in X
 knnresult distrAllkNN(double *X, int n, int d, int k) {
 
-	int P, pid;
+	int P, pid,
+			*idx = malloc(n*k*sizeof(int));
+	double *dist = malloc(n*k*sizeof(double)), 
+				 *corpus = malloc(n*d*sizeof(double)),
+				 *query = malloc(n*d*sizeof(double));
+	knnresult knn, result;
+	
 
+
+	/* Set the MPI Variables */
 	MPI_Comm_rank(MPI_COMM_WORLD, &pid);
 	MPI_Comm_size(MPI_COMM_WORLD, &P);
 
-	printf("There are %d tasks, and I am %d\n", P, pid);
+	/* Initialize Matrices */
+	for(int i = 0; i < n*d; i++) {
+		corpus[i] = X[i];
+		query[i] = X[i];
+	}
+	for(int i = 0; i < n*k; i++){
+		dist[i] = DBL_MAX;
+		idx[i] = 0;
+	}	
 
-	knnresult *res = malloc(sizeof(knnresult));;
-	res->nidx = malloc(n*k*sizeof(int));
-	res->ndist = malloc(n*k*sizeof(double));
-	res->m = n;
-	res->k = k;
+	for(int i = 0; i < P; i++) {
 
+		// Calculate your own points kNN
+		knn = kNN(corpus, query, n, n, d, k); 	
+
+		// Add them to the heap (Only if there are clores will be added)
+		for(int qp = 0; qp < n; qp++)
+			for(int j = 0; j < k; j++)		
+				insert(
+								dist+qp*k, 
+								idx+qp*k,
+								k,
+								knn.ndist[qp*k+j],
+								knn.nidx[qp*k+j]
+							);
+								
+		/* If even process:
+				Send points
+				then Reciev points
+		*/
+		
+		/*	Else:
+				Reciev points
+				then Send points
+		*/
+
+	}
 	
 
 	return *res;
