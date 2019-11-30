@@ -299,6 +299,10 @@ knnresult kNN(double *X, double *Y, int n, int m, int d, int k) {
 knnresult distrAllkNN(double *X, int n, int d, int k) {
 
 	knnresult *res = malloc(sizeof(knnresult));;
+	res->nidx = malloc(n*k*sizeof(int));
+	res->ndist = malloc(n*k*sizeof(double));
+	res->m = n;
+	res->k = k;
 
 	return *res;
 
