@@ -299,8 +299,8 @@ knnresult distrAllkNN(double *X, int n, int d, int k) {
 	double *dist = malloc(n*k*sizeof(double)), 
 				 *corpus = malloc(n*d*sizeof(double)),
 				 *query = malloc(n*d*sizeof(double));
+	MPI_Status Stat;
 	knnresult knn, result;
-	
 
 
 	/* Set the MPI Variables */
@@ -330,8 +330,8 @@ knnresult distrAllkNN(double *X, int n, int d, int k) {
 								dist + qp*k,
 								idx + qp*k,
 								k,
-								knn.ndist[qp*k+j];
-								knn.nidx[qp*k+j];
+								knn.ndist[qp*k+j],
+								knn.nidx[qp*k+j],
 							);
 		/* If `even` process -> Sent */
 		MPI_Send(query, n*d, MPI_DOUBLE, (p+1)%P, 1, MPI_COMM_WORLD);
