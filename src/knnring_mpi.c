@@ -3,7 +3,7 @@
 
  * Title	: Synchronus kNN Ring
 
- * Short	: 
+ * Short	:
 
  * Long 	: -
 
@@ -23,12 +23,17 @@
 #include <float.h>
 #include "knnring.h"
 
-#define		parent(i)			((int) floor((double)(i)/2))
-#define		left(i)				(2*i+1)
-#define		right(i)			(2*i+2)
 #define		even(n)				((n % 2) == 0)
-#define 	odd(n)				(!even(n))			
+#define 	odd(n)				(!even(n))
+#define		prev(pid)			((P+pid-1)%P)
+#define		next(pid)			((pid+1)%P)
+#define		offstet(p)		(n*prev(pid-p))
 
+#define		knndist(i,j)	(knn.ndist[i*k+j])
+#define		knnidx(i,j)		(knn.nidx[i*k+j])
+#define		resdist(i,j)	(res.ndist[i*k+j])
+#define		residx(i,j)		(res.nidx[i*k+j])
+#define		TAG								1
 
 //! Inserts a key to the Heap (arrays dist and idx)
 /*!
@@ -41,27 +46,27 @@
 	\return 		`void`
 
 */
-void insert(double *dist, int *idx, int n, double v, int id){
+void insert(double *dist, int *idx, double v, int id, int k){
 
-	int i = n-1;
+	int i = k-1;
 
-	if( v > dist[i] )
-		return;
-
+	if( v > dist[i] ){
+			return;
+	}
 
 	dist[i] = v;
 	idx[i] = id;
 
-	while( i > 0 && dist[parent(i)] > dist[i] ){
+	while( i > 0 && dist[i-1] > dist[i] ){
 		double tmp_d = dist[i];
-		dist[i] = dist[parent(i)];
-		dist[parent(i)] = tmp_d;
+		dist[i] = dist[i-1];
+		dist[i-1] = tmp_d;
 
 		int tmp_i = idx[i];
-		idx[i] = idx[parent(i)];
-		idx[parent(i)] = tmp_i;
+		idx[i] = idx[i-1];
+		idx[i-1] = tmp_i;
 
-		i = parent(i);
+		i = i-1;
 	}
 	return;
 }
@@ -281,11 +286,17 @@ knnresult kNN(double *X, double *Y, int n, int m, int d, int k) {
 			result->ndist[  qp*ldr+cp ] = D[ qp*ldD + cp  ];
 		}
 
+		// Sort the result
+		quickSort(
+					result->ndist +qp*ldr,
+					result->nidx+qp*ldr,
+					k
+				);
+
 	}
 
 	free(D);
 	free(idx);
-
 
 	return *result;
 }
@@ -294,66 +305,59 @@ knnresult kNN(double *X, double *Y, int n, int m, int d, int k) {
 //! Compute distributed all-kNN of points in X
 knnresult distrAllkNN(double *X, int n, int d, int k) {
 
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Variable Decalration
 	int P, pid,
 			*idx = malloc(n*k*sizeof(int));
-	double *dist = malloc(n*k*sizeof(double)), 
+	double *dist = malloc(n*k*sizeof(double)),
+				 *buffer = malloc(n*d*sizeof(double)),
 				 *corpus = malloc(n*d*sizeof(double)),
 				 *query = malloc(n*d*sizeof(double));
-	MPI_Status Stat;
-	knnresult knn, result;
+	MPI_Status stat;
+	knnresult res, knn;
 
-
-	/* Set the MPI Variables */
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Initializing Varialbes
 	MPI_Comm_rank(MPI_COMM_WORLD, &pid);
 	MPI_Comm_size(MPI_COMM_WORLD, &P);
-
-	/* Initialize Matrices */
 	for(int i = 0; i < n*d; i++) {
-		corpus[i] = X[i];
-		query[i] = X[i];
+		corpus[i] =	X[i];
+		query[i] 	=	X[i];
+		buffer[i] = X[i];
 	}
-	for(int i = 0; i < n*k; i++){
-		dist[i] = DBL_MAX;
-		idx[i] = 0;
-	}	
+	for(int i = 0; i < n*k; i++) {
+			idx[ i ] 	= 	0;
+			dist[ i ] = 	DBL_MAX;
+	}
 
-	/* DO THE RING COMPUTATION */
-	for(int p = 0; p < P-1; p++) {
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Ring Computation
+	for(int p = 0; p < P; p++){
 
-		/* Find knn for query and corpus */
+		// ______________________________________ Finding 'next' knn
 		knn = kNN(corpus, query, n, n, d, k);
-
-		/* Add to the heap */
-		for(int qp = 0; qp < n; qp++)
-			for(int j = 0; j < k; j++)
-				insert(
-								dist + qp*k,
-								idx + qp*k,
-								k,
-								knn.ndist[qp*k+j],
-								knn.nidx[qp*k+j]
-							);
-		/* If `even` process -> Sent */
-		if(even(pid)){
-			printf("Sending, pid=%d\n", pid);
-			MPI_Send(query, n*d, MPI_DOUBLE, (p+1)%P, 1, MPI_COMM_WORLD);
+		for(int i = 0; i < n; i++) {
+			for(int j = 0; j < k; j++) {
+				knnidx(i,j) += offstet(p);
+				insert( dist+(i*k), idx+(i*k), knndist(i,j), knnidx(i,j), k);
+			}
 		}
 
-		/* If `odd` process -> Receive */
-		else {
-			printf("Recieving, pid=%d\n", pid);
-			MPI_Recv(query, n*d, MPI_DOUBLE, (p-1)%P, 1, MPI_COMM_WORLD, &Stat);
-		{
+		// ______________________________________ Send & Receive data
+		if(even(pid)) {
+			MPI_Send(query, n*d, MPI_DOUBLE, next(pid), TAG, MPI_COMM_WORLD);
+			MPI_Recv(buffer, n*d, MPI_DOUBLE, prev(pid), TAG, MPI_COMM_WORLD, &stat);
+		} else {
+			MPI_Recv(buffer, n*d, MPI_DOUBLE, prev(pid), TAG, MPI_COMM_WORLD, &stat);
+			MPI_Send(query, n*d, MPI_DOUBLE, next(pid), TAG, MPI_COMM_WORLD);
+		}
+
+		// ______________________________________ Setting the Corpus Set
+		for(int i = 0; i < n*d; i++) query[i] = buffer[i];
+
 	}
 
-	free(corpus);
-	free(query);
-
-	result.nidx = idx;
-	result.ndist = dist;
-	result.m = n;
-	result.k = k;
-
-	return result;
+	res.m = n;
+	res.k = k;
+	res.ndist = dist;
+	res.nidx = idx;
+	return res;
 
 }

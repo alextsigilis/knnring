@@ -1,6 +1,6 @@
 CC = mpicc
 
-CFLAGS = -O3 -Wall -g -fsanitize=address 
+CFLAGS = -O3 -Wall -g
 
 # The Path to the OpenBLAS library
 OPENBLAS = /usr/local/Cellar/openblas/0.3.7
@@ -9,7 +9,7 @@ INC = -Iinc/ -I$(OPENBLAS)/include/
 
 LDFLAGS = -L$(OPENBLAS)/lib/
 
-TYPES = sequential mpi
+TYPES = mpi sequential
 
 SRC = knnring
 
