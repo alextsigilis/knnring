@@ -16,13 +16,23 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <math.h>
+#include <float.h>
 #include <assert.h>
 #include <cblas.h>
+#include "mpi.h"
 #include "knnring.h"
 
-#define		parent(i)				(int) floor((double)(i)/2)
-#define		left(i)							2*i+1
-#define		right(i)						2*i+2
+#define		even(n)				((n % 2) == 0)
+#define 	odd(n)				(!even(n))
+#define		prev(pid)			((P+pid-1)%P)
+#define		next(pid)			((pid+1)%P)
+#define		offset(p)			(n*prev(pid-p))
+
+#define		knndist(i,j)	(knn.ndist[i*k+j])
+#define		knnidx(i,j)		(knn.nidx[i*k+j])
+#define		resdist(i,j)	(res.ndist[i*k+j])
+#define		residx(i,j)		(res.nidx[i*k+j])
+#define		TAG								1
 
 
 //! Inserts a key to the Heap (arrays dist and idx)
@@ -36,27 +46,27 @@
 	\return 		`void`
 
 */
-void insert(double *dist, int *idx, int n, double v, int id){
+void insert(double *dist, int *idx, double v, int id, int k){
 
-	int i = n-1;
+	int i = k-1;
 
-	if( v > dist[i] )
-		return;
-
+	if( v > dist[i] ){
+			return;
+	}
 
 	dist[i] = v;
 	idx[i] = id;
 
-	while( i > 0 && dist[parent(i)] > dist[i] ){
+	while( i > 0 && dist[i-1] > dist[i] ){
 		double tmp_d = dist[i];
-		dist[i] = dist[parent(i)];
-		dist[parent(i)] = tmp_d;
+		dist[i] = dist[i-1];
+		dist[i-1] = tmp_d;
 
 		int tmp_i = idx[i];
-		idx[i] = idx[parent(i)];
-		idx[parent(i)] = tmp_i;
+		idx[i] = idx[i-1];
+		idx[i-1] = tmp_i;
 
-		i = parent(i);
+		i--;
 	}
 	return;
 }
@@ -294,4 +304,62 @@ knnresult kNN(double *X, double *Y, int n, int m, int d, int k) {
 
 
 	return *result;
+}
+
+
+//! Compute distributed all-kNN of points in X
+knnresult distrAllkNN(double *X, int n, int d, int k) {
+
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Variable Decalration
+	int P, pid,
+			*idx = malloc(n*k*sizeof(int));
+	double *dist = malloc(n*k*sizeof(double)),
+				 *buffer = malloc(n*d*sizeof(double)),
+				 *corpus = malloc(n*d*sizeof(double)),
+				 *query = malloc(n*d*sizeof(double));
+	MPI_Status stat;
+	knnresult res, knn;
+
+	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Initializing Varialbes
+	MPI_Comm_rank(MPI_COMM_WORLD, &pid);
+	MPI_Comm_size(MPI_COMM_WORLD, &P);
+	for(int i = 0; i < n*d; i++) {
+		corpus[i] =	X[i];
+		query[i] 	=	X[i];
+		buffer[i] = X[i];
+	}
+	for(int i = 0; i < n*k; i++) {
+			idx[ i ] 	= 	0;
+			dist[ i ] = 	DBL_MAX;
+	}
+
+	for(int p = 0; p < P; p++) {
+
+		knn = kNN(corpus, query, n, n, d, k);
+		for(int i = 0; i < n; i++)
+			for(int j = 0; j < k; j++) {
+				knn.nidx[i*k+j] += offset(p);
+				insert( dist+(i*k), idx+(i*k), knn.ndist[i*k+j], knn.nidx[i*k+j], k);
+			}
+
+
+		if(even(pid)){
+			MPI_Send(corpus, n*d, MPI_DOUBLE, next(pid), TAG, MPI_COMM_WORLD);
+			MPI_Recv(buffer, n*d, MPI_DOUBLE, prev(pid), TAG, MPI_COMM_WORLD, &stat);
+		} else {
+			MPI_Recv(buffer, n*d, MPI_DOUBLE, prev(pid), TAG, MPI_COMM_WORLD, &stat);
+			MPI_Send(corpus, n*d, MPI_DOUBLE, next(pid), TAG, MPI_COMM_WORLD);
+		}
+
+		for(int i = 0; i < n*d; i++) corpus[i] = buffer[i];
+
+	}
+
+	res.m = n;
+	res.k = k;
+	res.nidx = idx;
+	res.ndist = dist;
+
+	return res;
+
 }

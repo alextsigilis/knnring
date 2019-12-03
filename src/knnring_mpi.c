@@ -330,13 +330,14 @@ knnresult distrAllkNN(double *X, int n, int d, int k) {
 			dist[ i ] = 	DBL_MAX;
 	}
 
-	double *Y = calloc(P*n*d, sizeof(double));
-
 	for(int p = 0; p < P; p++) {
 
+		knn = kNN(corpus, query, n, n, d, k);
 		for(int i = 0; i < n; i++)
-			for(int j = 0; j < d; j++)
-				Y[ (i+prev(pid-p)*n)*d + j ] = corpus[i*d+j];
+			for(int j = 0; j < k; j++) {
+				knn.nidx[i*k+j] += offset(p);
+				insert( dist+(i*k), idx+(i*k), knn.ndist[i*k+j], knn.nidx[i*k+j], k);
+			}
 
 
 		if(even(pid)){
@@ -351,15 +352,11 @@ knnresult distrAllkNN(double *X, int n, int d, int k) {
 
 	}
 
-	if(pid == 0) {
-		knn = kNN(Y, X, n*P, n, d, k);
-		for(int i = 0; i < knn.m; i++) {
-			for(int j = 0; j < knn.k; j++) printf("%f ", knn.ndist[i*k+j]);
-			printf("\n");
-		}
-	}
+	res.m = n;
+	res.k = k;
+	res.nidx = idx;
+	res.ndist = dist;
 
-	res = kNN(Y, query, n*P, n, d, k);
 	return res;
 
 }

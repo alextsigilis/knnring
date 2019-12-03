@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "mpi.h"
 #include "knnring.h"
 
@@ -10,7 +11,6 @@
 int main (int argc, char *argv[]) {
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~ Declaring Variables
-	FILE *in, *out;
 	int P, pid,
 			n = atoi(argv[1]),
 			d = atoi(argv[2]),
@@ -24,21 +24,23 @@ int main (int argc, char *argv[]) {
 	MPI_Comm_rank(MPI_COMM_WORLD, &pid);
 	MPI_Comm_size(MPI_COMM_WORLD, &P);
 
+	// ======================= Run the Sequential code
+	if(P == 1) {
+		X = malloc(n*d*P*sizeof(double));
+		for(int i = 0; i < n*P*d; i++) X[i] = (double)(rand()) / RAND_MAX;
+
+		kNN(X,X,n,n,d,k);
+
+		return 0;
+
+	}
 
 	//			==================== MASTER
 	if (pid == 0) {
 
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~ Read Input
-		in = fopen("data.in", "r");
-		X = calloc(n*P*d, sizeof(double));
-		for(int i = 0; i < P*n; i++) {
-			for(int j = 0; j < d; j++) {
-				double tmp;
-				fscanf(in, "%lf", &tmp);
-				X[i*d+j] = tmp;
-			}
-		}
-		fclose(in);
+		X = malloc(n*d*P*sizeof(double));
+		for(int i = 0; i < n*P*d; i++) X[i] = (double)(rand()) / RAND_MAX;
 
 		//  ~~~~~~~~~~~~~~~~~~~~~~~~~ Send chucks to each process
 		for(int p = 0; p < P-1; p++) {
@@ -79,24 +81,6 @@ int main (int argc, char *argv[]) {
 			}
 
 		}
-		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Write results to file
-		out = fopen("data.out", "w");
-		fprintf(out, "%d %d\n", res.m, res.k);
-
-		for(int i = 0; i < res.m; i++) {
-			for(int j = 0; j < res.k; j++) {
-				fprintf(out, "%d ", res.nidx[i*res.k + j]);
-			}
-			fprintf(out, "\n");
-		}
-		for(int i = 0; i < res.m; i++) {
-			for(int j = 0; j < res.k; j++) {
-				fprintf(out, "%f ", res.ndist[i*res.k + j]);
-			}
-			fprintf(out, "\n");
-		}
-		fclose(out);
-
 
 	}
 	//			====================== SLAVE
