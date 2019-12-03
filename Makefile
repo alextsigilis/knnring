@@ -3,11 +3,11 @@ CC = mpicc
 CFLAGS = -O3 -Wall -g
 
 # The Path to the OpenBLAS library
-OPENBLAS = /usr/local/Cellar/openblas/0.3.7
+OPENBLAS =
 
-INC = -Iinc/ -I$(OPENBLAS)/include/
+INC = -Iinc/
 
-LDFLAGS = -L$(OPENBLAS)/lib/
+LDFLAGS = 
 
 TYPES = mpi sequential
 
