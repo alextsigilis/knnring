@@ -27,7 +27,7 @@
 #define 	odd(n)				(!even(n))
 #define		prev(pid)			((P+pid-1)%P)
 #define		next(pid)			((pid+1)%P)
-#define		offstet(p)		(n*prev(pid-p))
+#define		offset(p)			(n*prev(pid-p))
 
 #define		knndist(i,j)	(knn.ndist[i*k+j])
 #define		knnidx(i,j)		(knn.nidx[i*k+j])
@@ -66,7 +66,7 @@ void insert(double *dist, int *idx, double v, int id, int k){
 		idx[i] = idx[i-1];
 		idx[i-1] = tmp_i;
 
-		i = i-1;
+		i--;
 	}
 	return;
 }
@@ -239,7 +239,9 @@ void compute_distances (double *D, double *X, double *Y, int n, int m, int d) {
   product(D,Y,X,m,n,d);
 
 	// Taking the square root
-  for(uint64_t i = 0; i < n*m; i++) D[i] = sqrt(D[i]);
+  for(uint64_t i = 0; i < n*m; i++) D[i] = sqrt(
+																								(D[i] >= 0)? D[i] : -D[i]
+																							);
 
 	return;
 }
@@ -328,36 +330,36 @@ knnresult distrAllkNN(double *X, int n, int d, int k) {
 			dist[ i ] = 	DBL_MAX;
 	}
 
-	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Ring Computation
-	for(int p = 0; p < P; p++){
+	double *Y = calloc(P*n*d, sizeof(double));
 
-		// ______________________________________ Finding 'next' knn
-		knn = kNN(corpus, query, n, n, d, k);
-		for(int i = 0; i < n; i++) {
-			for(int j = 0; j < k; j++) {
-				knnidx(i,j) += offstet(p);
-				insert( dist+(i*k), idx+(i*k), knndist(i,j), knnidx(i,j), k);
-			}
-		}
+	for(int p = 0; p < P; p++) {
 
-		// ______________________________________ Send & Receive data
-		if(even(pid)) {
-			MPI_Send(query, n*d, MPI_DOUBLE, next(pid), TAG, MPI_COMM_WORLD);
+		for(int i = 0; i < n; i++)
+			for(int j = 0; j < d; j++)
+				Y[ (i+prev(pid-p)*n)*d + j ] = corpus[i*d+j];
+
+
+		if(even(pid)){
+			MPI_Send(corpus, n*d, MPI_DOUBLE, next(pid), TAG, MPI_COMM_WORLD);
 			MPI_Recv(buffer, n*d, MPI_DOUBLE, prev(pid), TAG, MPI_COMM_WORLD, &stat);
 		} else {
 			MPI_Recv(buffer, n*d, MPI_DOUBLE, prev(pid), TAG, MPI_COMM_WORLD, &stat);
-			MPI_Send(query, n*d, MPI_DOUBLE, next(pid), TAG, MPI_COMM_WORLD);
+			MPI_Send(corpus, n*d, MPI_DOUBLE, next(pid), TAG, MPI_COMM_WORLD);
 		}
 
-		// ______________________________________ Setting the Corpus Set
-		for(int i = 0; i < n*d; i++) query[i] = buffer[i];
+		for(int i = 0; i < n*d; i++) corpus[i] = buffer[i];
 
 	}
 
-	res.m = n;
-	res.k = k;
-	res.ndist = dist;
-	res.nidx = idx;
+	if(pid == 0) {
+		knn = kNN(Y, X, n*P, n, d, k);
+		for(int i = 0; i < knn.m; i++) {
+			for(int j = 0; j < knn.k; j++) printf("%f ", knn.ndist[i*k+j]);
+			printf("\n");
+		}
+	}
+
+	res = kNN(Y, query, n*P, n, d, k);
 	return res;
 
 }
