@@ -2,12 +2,9 @@ CC = mpicc
 
 CFLAGS = -O3 -Wall -g
 
-# The Path to the OpenBLAS library
-OPENBLAS =
+INC = -Iinc/ -I$(OPENBLAS_ROOT)/include/
 
-INC = -Iinc/
-
-LDFLAGS = 
+LDFLAGS = -L$(OPENBLAS_ROOT)/lib/
 
 TYPES = mpi sequential
 
