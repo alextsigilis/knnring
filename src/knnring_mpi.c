@@ -315,7 +315,8 @@ knnresult distrAllkNN(double *X, int n, int d, int k) {
 				 *buffer = malloc(n*d*sizeof(double)),
 				 *corpus = malloc(n*d*sizeof(double)),
 				 *query = malloc(n*d*sizeof(double));
-	MPI_Status stat;
+	MPI_Status stats[2];
+	MPI_Request reqs[2];
 	knnresult res, knn;
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Initializing Varialbes
@@ -333,6 +334,8 @@ knnresult distrAllkNN(double *X, int n, int d, int k) {
 
 	for(int p = 0; p < P; p++) {
 
+		MPI_Irecv(buffer, n*d, MPI_DOUBLE, prev(pid), TAG, MPI_COMM_WORLD, &reqs[0]);
+
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Computing the new kNN
 		knn = kNN(corpus, query, n, n, d, k);
 		// ________________________________ Updating the "global" kNN
@@ -342,14 +345,11 @@ knnresult distrAllkNN(double *X, int n, int d, int k) {
 				insert( dist+(i*k), idx+(i*k), knn.ndist[i*k+j], knn.nidx[i*k+j], k);
 			}
 
-		// ________________________________ Sendin & Receiving data from the other processes
-		if(even(pid)){
-			MPI_Send(corpus, n*d, MPI_DOUBLE, next(pid), TAG, MPI_COMM_WORLD);
-			MPI_Recv(buffer, n*d, MPI_DOUBLE, prev(pid), TAG, MPI_COMM_WORLD, &stat);
-		} else {
-			MPI_Recv(buffer, n*d, MPI_DOUBLE, prev(pid), TAG, MPI_COMM_WORLD, &stat);
-			MPI_Send(corpus, n*d, MPI_DOUBLE, next(pid), TAG, MPI_COMM_WORLD);
-		}
+
+		MPI_Isend(corpus, n*d, MPI_DOUBLE, next(pid), TAG, MPI_COMM_WORLD, &reqs[1]);
+
+		MPI_Waitall(2, reqs, stats);
+
 		for(int i = 0; i < n*d; i++) corpus[i] = buffer[i];
 
 	}
