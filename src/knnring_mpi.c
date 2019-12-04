@@ -21,6 +21,7 @@
 #include <assert.h>
 #include <cblas.h>
 #include <float.h>
+#include <time.h>
 #include "knnring.h"
 
 #define		even(n)				((n % 2) == 0)
@@ -332,14 +333,16 @@ knnresult distrAllkNN(double *X, int n, int d, int k) {
 
 	for(int p = 0; p < P; p++) {
 
+		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Computing the new kNN
 		knn = kNN(corpus, query, n, n, d, k);
+		// ________________________________ Updating the "global" kNN
 		for(int i = 0; i < n; i++)
 			for(int j = 0; j < k; j++) {
 				knn.nidx[i*k+j] += offset(p);
 				insert( dist+(i*k), idx+(i*k), knn.ndist[i*k+j], knn.nidx[i*k+j], k);
 			}
 
-
+		// ________________________________ Sendin & Receiving data from the other processes
 		if(even(pid)){
 			MPI_Send(corpus, n*d, MPI_DOUBLE, next(pid), TAG, MPI_COMM_WORLD);
 			MPI_Recv(buffer, n*d, MPI_DOUBLE, prev(pid), TAG, MPI_COMM_WORLD, &stat);
@@ -347,7 +350,6 @@ knnresult distrAllkNN(double *X, int n, int d, int k) {
 			MPI_Recv(buffer, n*d, MPI_DOUBLE, prev(pid), TAG, MPI_COMM_WORLD, &stat);
 			MPI_Send(corpus, n*d, MPI_DOUBLE, next(pid), TAG, MPI_COMM_WORLD);
 		}
-
 		for(int i = 0; i < n*d; i++) corpus[i] = buffer[i];
 
 	}
@@ -356,6 +358,12 @@ knnresult distrAllkNN(double *X, int n, int d, int k) {
 	res.k = k;
 	res.nidx = idx;
 	res.ndist = dist;
+
+	free(dist);
+	free(buffer);
+	free(corpus);
+	free(query);
+	free(idx);
 
 	return res;
 

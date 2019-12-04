@@ -1,20 +1,43 @@
+####################################################
+## 				The Directory for the  		    					##
+##  			BLAS (openblas) Library		    					##
+## 			Set the enviroment viairable: 						##
+##   																							##
+## 	$ export OPENBLAS_ROOT=/path/to/open/blas 		##
+##																								##
+####################################################
+
+BLAS=${OPENBLAS_ROOT}
+
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+# The Shell you're using
+SHELL := /bin/bash
+
+# The C compiler
 CC = mpicc
 
+# Flags for the gcc
 CFLAGS = -O3 -Wall -g
 
-INC = -Iinc/ -I$(OPENBLAS_ROOT)/include/
+# Include paths for header files
+INC = -Iinc/ -I$(BLAS)/include/
 
-LDFLAGS = -L$(OPENBLAS_ROOT)/lib/
+# Paths for libriries to link
+LDFLAGS = -L$(BLAS)/lib/
+
+# Libraries to load
+LIBS = -lm -lopenblas
+
+# -----=-------=--------=-----=-------=-----=
 
 TYPES = mpi sequential
 
 SRC = knnring
 
-LIBS = -lm -lopenblas
-
 MAIN = main
 
-# ----------------------------------------------
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 all: $(addprefix $(MAIN)_, $(TYPES))
 
 $(MAIN)_%: $(MAIN).c lib/$(SRC)_%.a
@@ -28,6 +51,7 @@ lib/%.a: lib/%.o
 	ar rcs $@ $<
 
 lib/%.o: src/%.c
+	echo $(BLAS)
 	$(CC) $(CFLAGS) $(INC) -o $@ -c $<
 
 clean:
