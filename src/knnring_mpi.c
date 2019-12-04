@@ -354,7 +354,7 @@ knnresult distrAllkNN(double *X, int n, int d, int k) {
 
 	}
 
-	res.m = n;
+	res.m= n;
 	res.k = k;
 	res.nidx = idx;
 	res.ndist = dist;
