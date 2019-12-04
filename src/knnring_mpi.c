@@ -36,42 +36,48 @@
 #define		residx(i,j)		(res.nidx[i*k+j])
 #define		TAG								1
 
-//! Inserts a key to the Heap (arrays dist and idx)
+
+//! Given two arrays of n elements keeps the n smallest,
+//! using the merge method from mergesort
 /*!
-	\param dist			Array that holds the values			[n-by-1]
-	\param idx			Array of the initial indexes		[n-by-1]
-	\param n				The length of the arrays				[scalar]
-	\param v				The `key` to be inserted				[scalar]
-	\param id				The initial index of the key		[scalar]
-	---------------------------------------------------------
+	\param old			The first array																									[n-by-1]
+	\param old_i		The indexes of the elements of 'old 'in the initial dataset			[n-by-1]
+	\param new 			The second arrays																								[n-by-1]
+	\param new_i		The indexes of the elements of 'new' in the initial dataset			[n-by-1]
+	\param n				The size of all the arrays																			[scalar]
+	-----------------------------------------------------------------------------------------
 	\return 		`void`
 
 */
-void insert(double *dist, int *idx, double v, int id, int k){
+void merge(double *old, int *old_i, double *new, int *new_i, int n) {
 
-	int i = k-1;
+	double *A = malloc(n*sizeof(double));
+	int *A_i = malloc(n*sizeof(int));
 
-	if( v > dist[i] ){
-			return;
+	int i = 0,
+			j = 0;
+
+	for(int r = 0; r < n; r++) {
+		if(old[i] <= new[j]) {
+			A[r] = old[i];
+			A_i[r] = old_i[i];
+			i++;
+		} else{
+			A[r] = new[j];
+			A_i[r] = new_i[j];
+			j++;
+		}
 	}
 
-	dist[i] = v;
-	idx[i] = id;
-
-	while( i > 0 && dist[i-1] > dist[i] ){
-		double tmp_d = dist[i];
-		dist[i] = dist[i-1];
-		dist[i-1] = tmp_d;
-
-		int tmp_i = idx[i];
-		idx[i] = idx[i-1];
-		idx[i-1] = tmp_i;
-
-		i--;
+	for(int i = 0; i < n; i++) {
+		old[i] = A[i];
+		old_i[i] = A_i[i];
 	}
-	return;
+
+	free(A);
+	free(A_i);
+
 }
-
 
 //! Returns the element of which k elements are less than or equal,
 //!		it also partitions the arrays
@@ -336,11 +342,17 @@ knnresult distrAllkNN(double *X, int n, int d, int k) {
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Computing the new kNN
 		knn = kNN(corpus, query, n, n, d, k);
 		// ________________________________ Updating the "global" kNN
-		for(int i = 0; i < n; i++)
-			for(int j = 0; j < k; j++) {
-				knn.nidx[i*k+j] += offset(p);
-				insert( dist+(i*k), idx+(i*k), knn.ndist[i*k+j], knn.nidx[i*k+j], k);
-			}
+		for(int i = 0; i < n; i++) {
+				for(int j = 0; j < k; j++) knn.nidx[i*k+j] += offset(p);
+				merge(
+							dist + (i*k),
+							idx + (i*k),
+							knn.ndist + (i*k),
+							knn.nidx + (i*k),
+							k
+						);
+		}
+
 
 		// ________________________________ Sendin & Receiving data from the other processes
 		if(even(pid)){
@@ -354,16 +366,10 @@ knnresult distrAllkNN(double *X, int n, int d, int k) {
 
 	}
 
-	res.m= n;
+	res.m = n;
 	res.k = k;
 	res.nidx = idx;
 	res.ndist = dist;
-
-	free(dist);
-	free(buffer);
-	free(corpus);
-	free(query);
-	free(idx);
 
 	return res;
 
