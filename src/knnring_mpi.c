@@ -1,7 +1,7 @@
 /*
  * File		: knnring_sequential.c
 
- * Title	: Synchronus kNN Ring
+ * Title	: As§ynchronus kNN Ring
 
  * Short	:
 

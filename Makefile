@@ -1,9 +1,9 @@
 ####################################################
-## 				The Directory for the  		    					##
-##  			BLAS (openblas) Library		    					##
-## 			Set the enviroment viairable: 						##
-##   																							##
-## 	$ export OPENBLAS_ROOT=/path/to/open/blas 		##
+## 				The Directory for the										##
+##  			BLAS (openblas) Library									##
+## 			Set the enviroment viairable:							##
+##																								##
+## 	$ export OPENBLAS_ROOT=/path/to/open/blas			##
 ##																								##
 ####################################################
 
