@@ -26,6 +26,7 @@ int main (int argc, char *argv[]) {
 
 	// ======================= Run the Sequential code
 	if(P == 1) {
+
 		X = malloc(n*d*P*sizeof(double));
 		for(int i = 0; i < n*P*d; i++) X[i] = (double)(rand()) / RAND_MAX;
 
@@ -38,17 +39,17 @@ int main (int argc, char *argv[]) {
 	//			==================== MASTER
 	if (pid == 0) {
 
-		// ~~~~~~~~~~~~~~~~~~~~~~~~~~ Read Input
-		X = malloc(n*d*P*sizeof(double));
-		for(int i = 0; i < n*P*d; i++) X[i] = (double)(rand()) / RAND_MAX;
+		X = malloc(n*d*sizeof(double));
 
 		//  ~~~~~~~~~~~~~~~~~~~~~~~~~ Send chucks to each process
 		for(int p = 0; p < P-1; p++) {
-			MPI_Send(X+n*d*p, n*d, MPI_DOUBLE, p+1, TAG, MPI_COMM_WORLD);
+			for(int i = 0; i < n*P*d; i++) X[i] = (double)(rand()) / RAND_MAX;
+			MPI_Send(X, n*d, MPI_DOUBLE, p+1, TAG, MPI_COMM_WORLD);
 		}
 
 		// Last Chucnk is mine
-		corpus = X + n*d*(P-1);
+		for(int i = 0; i < n*P*d; i++) X[i] = (double)(rand()) / RAND_MAX;
+		corpus = X; 
 		knn = distrAllkNN(corpus, n, d, k);
 
 
