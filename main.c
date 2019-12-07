@@ -43,12 +43,12 @@ int main (int argc, char *argv[]) {
 
 		//  ~~~~~~~~~~~~~~~~~~~~~~~~~ Send chucks to each process
 		for(int p = 0; p < P-1; p++) {
-			for(int i = 0; i < n*P*d; i++) X[i] = (double)(rand()) / RAND_MAX;
+			for(int i = 0; i < n*d; i++) X[i] = (double)(rand()) / RAND_MAX;
 			MPI_Send(X, n*d, MPI_DOUBLE, p+1, TAG, MPI_COMM_WORLD);
 		}
 
 		// Last Chucnk is mine
-		for(int i = 0; i < n*P*d; i++) X[i] = (double)(rand()) / RAND_MAX;
+		for(int i = 0; i < n*d; i++) X[i] = (double)(rand()) / RAND_MAX;
 		corpus = X; 
 		knn = distrAllkNN(corpus, n, d, k);
 
