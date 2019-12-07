@@ -342,7 +342,7 @@ knnresult distrAllkNN(double *X, int n, int d, int k) {
 
 		MPI_Irecv(buffer, n*d, MPI_DOUBLE, prev(pid), TAG, MPI_COMM_WORLD, &reqs[0]);
 		MPI_Isend(corpus, n*d, MPI_DOUBLE, next(pid), TAG, MPI_COMM_WORLD, &reqs[1]);
-		
+
 		// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Computing the new kNN
 		knn = kNN(corpus, query, n, n, d, k);
 		// ________________________________ Updating the "global" kNN
@@ -368,11 +368,9 @@ knnresult distrAllkNN(double *X, int n, int d, int k) {
 	res.nidx = idx;
 	res.ndist = dist;
 
-	free(dist);
 	free(buffer);
 	free(corpus);
 	free(query);
-	free(idx);
 
 	return res;
 
